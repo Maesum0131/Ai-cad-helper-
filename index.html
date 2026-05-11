@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI CAD Helper — Site Layout Generator for Civil Engineers</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0a0e17;
+    --surface: #111827;
+    --surface2: #1a2235;
+    --border: rgba(99,183,255,0.15);
+    --accent: #3b82f6;
+    --text: #f0f4ff;
+    --muted: #8899bb;
+  }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; overflow-x: hidden; }
+
+  /* NAV */
+  nav { display: flex; align-items: center; justify-content: space-between; padding: 1.25rem 2.5rem; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; background: rgba(10,14,23,0.92); backdrop-filter: blur(12px); }
+  .logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.2rem; letter-spacing: -0.02em; display: flex; align-items: center; gap: 8px; color: var(--text); text-decoration: none; }
+  .logo-icon { width: 28px; height: 28px; background: linear-gradient(135deg, #3b82f6, #06b6d4); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+  .nav-links { display: flex; gap: 2rem; align-items: center; }
+  .nav-links a { font-size: 0.875rem; color: var(--muted); text-decoration: none; transition: color 0.2s; }
+  .nav-links a:hover { color: var(--text); }
+  .nav-cta { background: var(--accent); color: #fff; padding: 0.5rem 1.25rem; border-radius: 6px; font-size: 0.875rem; font-weight: 500; border: none; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: opacity 0.2s; }
+  .nav-cta:hover { opacity: 0.85; }
+
+  /* HERO */
+  .hero { position: relative; padding: 5rem 2.5rem 4rem; text-align: center; overflow: hidden; }
+  .hero-grid { position: absolute; inset: 0; background-image: linear-gradient(rgba(59,130,246,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(59,130,246,0.06) 1px, transparent 1px); background-size: 40px 40px; mask-image: radial-gradient(ellipse 80% 60% at 50% 50%, black, transparent); }
+  .hero-glow { position: absolute; top: -100px; left: 50%; transform: translateX(-50%); width: 600px; height: 400px; background: radial-gradient(ellipse, rgba(59,130,246,0.12) 0%, transparent 70%); pointer-events: none; }
+  .badge { display: inline-flex; align-items: center; gap: 6px; background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.3); border-radius: 999px; padding: 0.3rem 0.9rem; font-size: 0.75rem; color: #93c5fd; font-family: 'DM Mono', monospace; letter-spacing: 0.05em; margin-bottom: 1.5rem; }
+  .badge-dot { width: 6px; height: 6px; border-radius: 50%; background: #3b82f6; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.4} }
+  h1 { font-family: 'Syne', sans-serif; font-size: clamp(2.5rem, 5vw, 4rem); font-weight: 800; line-height: 1.05; letter-spacing: -0.03em; margin-bottom: 1.25rem; max-width: 800px; margin-left: auto; margin-right: auto; }
+  h1 span { background: linear-gradient(135deg, #3b82f6, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .hero-sub { font-size: 1.1rem; color: var(--muted); max-width: 560px; margin: 0 auto 2.5rem; line-height: 1.7; font-weight: 300; }
+  .hero-actions { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+  .btn-primary { background: var(--accent); color: white; border: none; padding: 0.8rem 2rem; border-radius: 8px; font-size: 1rem; font-weight: 500; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.2s; }
+  .btn-primary:hover { background: #2563eb; transform: translateY(-1px); }
+  .btn-secondary { background: transparent; color: var(--text); border: 1px solid var(--border); padding: 0.8rem 2rem; border-radius: 8px; font-size: 1rem; font-weight: 500; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.2s; }
+  .btn-secondary:hover { border-color: rgba(99,183,255,0.4); background: var(--surface); }
+
+  /* STATS */
+  .stats { display: flex; justify-content: center; gap: 3rem; padding: 2rem; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+  .stat { text-align: center; }
+  .stat-num { font-family: 'Syne', sans-serif; font-size: 1.75rem; font-weight: 700; color: var(--text); }
+  .stat-label { font-size: 0.8rem; color: var(--muted); margin-top: 2px; }
+
+  /* FEATURES */
+  .features { padding: 5rem 2.5rem; max-width: 1100px; margin: 0 auto; }
+  .section-label { font-family: 'DM Mono', monospace; font-size: 0.7rem; letter-spacing: 0.12em; color: #3b82f6; text-transform: uppercase; margin-bottom: 0.75rem; }
+  .section-title { font-family: 'Syne', sans-serif; font-size: clamp(1.75rem, 3vw, 2.5rem); font-weight: 700; letter-spacing: -0.02em; margin-bottom: 3rem; max-width: 520px; }
+  .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; }
+  .feature-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.75rem; transition: border-color 0.2s, transform 0.2s; }
+  .feature-card:hover { border-color: rgba(59,130,246,0.4); transform: translateY(-2px); }
+  .feature-icon { width: 40px; height: 40px; background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.2); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; margin-bottom: 1rem; }
+  .feature-title { font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 600; margin-bottom: 0.5rem; }
+  .feature-desc { font-size: 0.875rem; color: var(--muted); line-height: 1.6; }
+
+  /* DEMO */
+  .demo-section { padding: 5rem 2.5rem; background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .demo-inner { max-width: 960px; margin: 0 auto; }
+  .demo-box { background: var(--bg); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .demo-toolbar { display: flex; align-items: center; gap: 8px; padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); background: var(--surface2); }
+  .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .dot-r{background:#ff5f57} .dot-y{background:#febc2e} .dot-g{background:#28c840}
+  .toolbar-title { flex: 1; text-align: center; font-family: 'DM Mono', monospace; font-size: 0.75rem; color: var(--muted); }
+  .demo-layout { display: grid; grid-template-columns: 1fr 1fr; min-height: 500px; }
+  .demo-input-pane { padding: 1.25rem; border-right: 1px solid var(--border); display: flex; flex-direction: column; gap: 1rem; }
+  .pane-label { font-family: 'DM Mono', monospace; font-size: 0.7rem; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; }
+  #specInput { flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: 'DM Mono', monospace; font-size: 0.75rem; padding: 1rem; resize: none; line-height: 1.6; min-height: 320px; outline: none; transition: border-color 0.2s; }
+  #specInput:focus { border-color: rgba(59,130,246,0.5); }
+  #specInput::placeholder { color: var(--muted); }
+  .generate-btn { width: 100%; background: linear-gradient(135deg, #3b82f6, #06b6d4); color: white; border: none; padding: 0.75rem; border-radius: 8px; font-size: 0.9rem; font-weight: 500; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: opacity 0.2s, transform 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .generate-btn:hover:not(:disabled) { opacity: 0.85; transform: translateY(-1px); }
+  .generate-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .demo-output-pane { padding: 1.25rem; display: flex; flex-direction: column; gap: 1rem; position: relative; }
+  .output-actions { display: flex; gap: 8px; }
+  .output-btn { font-size: 0.75rem; padding: 0.35rem 0.75rem; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.2s; }
+  .output-btn:hover { color: var(--text); border-color: rgba(99,183,255,0.4); }
+  .output-btn.active { background: rgba(59,130,246,0.1); color: #93c5fd; border-color: rgba(59,130,246,0.3); }
+  #cad-canvas { flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; position: relative; overflow: hidden; min-height: 360px; }
+  #cad-canvas svg { width: 100%; height: 100%; }
+  .canvas-placeholder { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; color: var(--muted); }
+  .canvas-placeholder p { font-size: 0.8rem; font-family: 'DM Mono', monospace; }
+  .loading-indicator { display: none; position: absolute; inset: 0; background: rgba(10,14,23,0.85); align-items: center; justify-content: center; flex-direction: column; gap: 12px; border-radius: 8px; z-index: 10; }
+  .loading-indicator.active { display: flex; }
+  .spinner { width: 32px; height: 32px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .loading-text { font-family: 'DM Mono', monospace; font-size: 0.75rem; color: var(--muted); }
+  #ai-analysis { display: none; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; font-size: 0.8rem; color: var(--muted); font-family: 'DM Mono', monospace; line-height: 1.6; max-height: 120px; overflow-y: auto; }
+
+  /* HOW IT WORKS */
+  .how-section { padding: 5rem 2.5rem; max-width: 900px; margin: 0 auto; }
+  .steps { display: flex; flex-direction: column; }
+  .step { display: flex; gap: 1.5rem; padding-bottom: 2.5rem; position: relative; }
+  .step:not(:last-child)::after { content: ''; position: absolute; left: 19px; top: 40px; bottom: 0; width: 1px; background: var(--border); }
+  .step-num { width: 40px; height: 40px; flex-shrink: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'DM Mono', monospace; font-size: 0.8rem; color: #3b82f6; position: relative; z-index: 1; }
+  .step-content { padding-top: 0.6rem; }
+  .step-title { font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 600; margin-bottom: 0.4rem; }
+  .step-desc { font-size: 0.875rem; color: var(--muted); line-height: 1.6; }
+
+  /* CTA */
+  .cta-section { padding: 5rem 2.5rem; text-align: center; background: var(--surface); border-top: 1px solid var(--border); }
+  .cta-section h2 { font-family: 'Syne', sans-serif; font-size: clamp(1.75rem, 3vw, 2.5rem); font-weight: 700; letter-spacing: -0.02em; margin-bottom: 1rem; }
+  .cta-section p { color: var(--muted); margin-bottom: 2rem; font-size: 1rem; }
+  .waitlist-form { display: flex; gap: 8px; max-width: 420px; margin: 0 auto; }
+  .email-input { flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem 1rem; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 0.9rem; outline: none; transition: border-color 0.2s; }
+  .email-input:focus { border-color: rgba(59,130,246,0.5); }
+  .email-input::placeholder { color: var(--muted); }
+  #waitlist-msg { color: #3b82f6; font-size: 0.875rem; margin-top: 0.75rem; display: none; font-family: 'DM Mono', monospace; }
+
+  footer { padding: 2rem 2.5rem; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
+  footer p { font-size: 0.8rem; color: var(--muted); }
+
+  @media(max-width:700px) {
+    .demo-layout{grid-template-columns:1fr}
+    .demo-input-pane{border-right:none;border-bottom:1px solid var(--border)}
+    nav{padding:1rem 1.25rem}
+    .nav-links{display:none}
+    h1{font-size:2rem}
+    .hero,.features,.how-section,.demo-section,.cta-section{padding:3rem 1.25rem}
+    .stats{gap:2rem}
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="logo" href="#">
+    <div class="logo-icon">⬡</div>
+    AI CAD Helper
+  </a>
+  <div class="nav-links">
+    <a href="#features">Features</a>
+    <a href="#demo">Demo</a>
+    <a href="#how">How it works</a>
+  </div>
+  <button class="nav-cta" onclick="document.querySelector('.cta-section').scrollIntoView({behavior:'smooth'})">Join Waitlist</button>
+</nav>
+
+<section class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div style="position:relative;z-index:1;">
+    <div class="badge"><div class="badge-dot"></div> Built for Civil Engineers</div>
+    <h1>Generate CAD layouts from<br><span>any spec doc</span> instantly</h1>
+    <p class="hero-sub">Paste a project specification, get a precise, editable site layout in seconds. Stop redrawing from scratch — let AI do the heavy lifting.</p>
+    <div class="hero-actions">
+      <button class="btn-primary" onclick="document.querySelector('#demo').scrollIntoView({behavior:'smooth'})">Try the Demo</button>
+      <button class="btn-secondary" onclick="document.querySelector('.cta-section').scrollIntoView({behavior:'smooth'})">Join the Waitlist →</button>
+    </div>
+  </div>
+</section>
+
+<div class="stats">
+  <div class="stat"><div class="stat-num">10x</div><div class="stat-label">faster than manual drafting</div></div>
+  <div class="stat"><div class="stat-num">&lt;30s</div><div class="stat-label">from spec to layout</div></div>
+  <div class="stat"><div class="stat-num">DXF</div><div class="stat-label">export ready</div></div>
+  <div class="stat"><div class="stat-num">Civil</div><div class="stat-label">engineer focused</div></div>
+</div>
+
+<section class="features" id="features">
+  <div class="section-label">// core features</div>
+  <h2 class="section-title">Everything you need to draft faster</h2>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">📄</div>
+      <div class="feature-title">Spec Doc Parsing</div>
+      <div class="feature-desc">Paste any project spec, patent layout, or design brief. AI extracts dimensions, zones, setbacks, and requirements automatically.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">⚡</div>
+      <div class="feature-title">Instant Layout Generation</div>
+      <div class="feature-desc">Get a proportional, dimensioned site layout in under 30 seconds. Roads, buildings, setbacks, and utilities placed intelligently.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">✏️</div>
+      <div class="feature-title">In-App Editing</div>
+      <div class="feature-desc">Drag, resize, and reposition any element directly. Change dimensions, labels, and zones without leaving the browser.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📐</div>
+      <div class="feature-title">CAD Export</div>
+      <div class="feature-desc">Export your layout as DXF or SVG, ready to import into AutoCAD, Civil 3D, or any standard CAD platform.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🏗️</div>
+      <div class="feature-title">Code Compliance Check</div>
+      <div class="feature-desc">Automatically flags setback violations, zoning conflicts, and code issues based on your jurisdiction's requirements.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔁</div>
+      <div class="feature-title">Iteration Engine</div>
+      <div class="feature-desc">Type a change in plain English — "move the retention pond to the southwest corner" — and it updates live.</div>
+    </div>
+  </div>
+</section>
+
+<section class="demo-section" id="demo">
+  <div class="demo-inner">
+    <div style="margin-bottom:2rem">
+      <div class="section-label">// live demo</div>
+      <h2 class="section-title">Paste a spec, get a layout</h2>
+    </div>
+    <div class="demo-box">
+      <div class="demo-toolbar">
+        <div class="dot dot-r"></div>
+        <div class="dot dot-y"></div>
+        <div class="dot dot-g"></div>
+        <div class="toolbar-title">AI CAD Helper — Site Layout Generator v0.1</div>
+      </div>
+      <div class="demo-layout">
+        <div class="demo-input-pane">
+          <div class="pane-label">// paste spec document</div>
+          <textarea id="specInput" placeholder="Paste your project specification here...&#10;&#10;Example:&#10;Site area: 2.4 acres&#10;Zoning: Commercial (C-2)&#10;Setbacks: Front 25ft, Side 10ft, Rear 20ft&#10;Proposed: 8,500 sqft retail building&#10;Parking: 42 spaces required&#10;Detention pond: required, southwest corner&#10;Utilities: water/sewer along north boundary&#10;Access: single driveway off Main Street north side"></textarea>
+          <button class="generate-btn" id="genBtn" onclick="generateLayout()">
+            <span id="genBtnText">⚡ Generate Layout</span>
+          </button>
+        </div>
+        <div class="demo-output-pane">
+          <div class="pane-label">// generated site layout</div>
+          <div class="output-actions">
+            <button class="output-btn active" id="btn-cad" onclick="setView('cad',this)">CAD View</button>
+            <button class="output-btn" id="btn-analysis" onclick="setView('analysis',this)">AI Analysis</button>
+          </div>
+          <div id="cad-canvas">
+            <div class="canvas-placeholder" id="placeholder">
+              <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                <rect x="8" y="8" width="32" height="32" rx="2" stroke="#8899bb" stroke-width="1.5" stroke-dasharray="4 2"/>
+                <line x1="8" y1="24" x2="40" y2="24" stroke="#8899bb" stroke-width="1"/>
+                <line x1="24" y1="8" x2="24" y2="40" stroke="#8899bb" stroke-width="1"/>
+              </svg>
+              <p>Layout renders here</p>
+            </div>
+            <div class="loading-indicator" id="loader">
+              <div class="spinner"></div>
+              <div class="loading-text" id="loadingText">Analyzing spec...</div>
+            </div>
+            <svg id="layoutSvg" style="display:none;" xmlns="http://www.w3.org/2000/svg"></svg>
+          </div>
+          <div id="ai-analysis"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="how-section" id="how">
+  <div class="section-label">// how it works</div>
+  <h2 class="section-title">From spec to CAD in three steps</h2>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">01</div>
+      <div class="step-content">
+        <div class="step-title">Paste your specification document</div>
+        <div class="step-desc">Copy in any project spec, patent design brief, or design intent document. AI CAD Helper reads plain text, PDFs, and structured documents.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">02</div>
+      <div class="step-content">
+        <div class="step-title">AI parses and generates the layout</div>
+        <div class="step-desc">Our model extracts site dimensions, building footprints, setbacks, parking, utilities, and access points — then renders a proportional CAD layout instantly.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">03</div>
+      <div class="step-content">
+        <div class="step-title">Edit, refine, and export</div>
+        <div class="step-desc">Adjust any element directly or describe a change in plain English. Export as DXF or SVG and bring it into AutoCAD, Civil 3D, or any platform of choice.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="cta-section">
+  <h2>Be first to redesign civil drafting</h2>
+  <p>Join engineers already on the waitlist. Early access launching soon.</p>
+  <div class="waitlist-form">
+    <input class="email-input" id="emailInput" type="email" placeholder="your@email.com" />
+    <button class="btn-primary" onclick="joinWaitlist()">Join Waitlist</button>
+  </div>
+  <div id="waitlist-msg">✓ You're on the list — we'll be in touch soon.</div>
+</section>
+
+<footer>
+  <div class="logo"><div class="logo-icon">⬡</div> AI CAD Helper</div>
+  <p>© 2025 AI CAD Helper. Built for civil engineers.</p>
+</footer>
+
+<script>
+  let currentView = 'cad';
+  let lastLayout = null;
+  const loadingMessages = ['Analyzing spec document...', 'Extracting dimensions & setbacks...', 'Placing building footprints...', 'Rendering site layout...'];
+
+  function setView(view, btn) {
+    currentView = view;
+    document.querySelectorAll('.output-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const analysis = document.getElementById('ai-analysis');
+    const svg = document.getElementById('layoutSvg');
+    if (view === 'analysis') {
+      analysis.style.display = lastLayout ? 'block' : 'none';
+      svg.style.display = 'none';
+    } else {
+      analysis.style.display = 'none';
+      if (lastLayout) svg.style.display = 'block';
+    }
+  }
+
+  async function generateLayout() {
+    const spec = document.getElementById('specInput').value.trim();
+    if (!spec) {
+      const inp = document.getElementById('specInput');
+      inp.style.borderColor = 'rgba(255,80,80,0.5)';
+      setTimeout(() => inp.style.borderColor = '', 1500);
+      return;
+    }
+    const btn = document.getElementById('genBtn');
+    const btnText = document.getElementById('genBtnText');
+    btn.disabled = true;
+    btnText.textContent = '⏳ Generating...';
+    document.getElementById('placeholder').style.display = 'none';
+    document.getElementById('layoutSvg').style.display = 'none';
+    document.getElementById('ai-analysis').style.display = 'none';
+    document.getElementById('loader').classList.add('active');
+
+    let msgIdx = 0;
+    const msgInterval = setInterval(() => {
+      document.getElementById('loadingText').textContent = loadingMessages[msgIdx % loadingMessages.length];
+      msgIdx++;
+    }, 1200);
+
+    try {
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1000,
+          system: `You are a civil engineering CAD layout AI. Given a project specification, return ONLY valid JSON with no markdown, no backticks, no preamble. Exactly this structure:
+{
+  "siteW": <number 320-440>,
+  "siteH": <number 230-310>,
+  "elements": [
+    {"type":"rect","x":<num>,"y":<num>,"w":<num>,"h":<num>,"fill":"<hex>","stroke":"<hex>","label":"<string>","sublabel":"<string or empty>"},
+    {"type":"line","x1":<num>,"y1":<num>,"x2":<num>,"y2":<num>,"stroke":"<hex>","dash":"4 2 or empty"},
+    {"type":"circle","cx":<num>,"cy":<num>,"r":<num>,"fill":"<hex>","stroke":"<hex>","label":"<string>"},
+    {"type":"label","x":<num>,"y":<num>,"text":"<string>","size":<8-13>,"color":"<hex>"}
+  ],
+  "analysis": "<2-3 sentence plain-text summary of what was extracted and generated>"
+}
+Color theme — dark engineering: bg=#0a0e17, site border=#374151. Buildings: fill=#1e3a5f, stroke=#3b82f6. Roads: fill=#1f2937, stroke=#6b7280. Parking: fill=#172030, stroke=#4b5563. Ponds/green: fill=#0d2b1e, stroke=#10b981. Setback lines: dashed stroke=#facc15. Text: primary=#f0f4ff, muted=#8899bb, dims=#94a3b8.
+Place all elements within x:15 to siteW-5, y:25 to siteH-15. Add a north arrow at top-right (small rect x:siteW-35, y:12, w:25, h:25 fill=#1a2235 stroke=#374151 label="N"). Add a scale bar at bottom-left. Make it look like a real preliminary site plan.`,
+          messages: [{ role: 'user', content: `Generate a site layout for this spec:\n\n${spec}` }]
+        })
+      });
+
+      const data = await response.json();
+      const raw = data.content?.[0]?.text || '{}';
+      const clean = raw.replace(/```json|```/g, '').trim();
+      const layout = JSON.parse(clean);
+      lastLayout = layout;
+      renderLayout(layout);
+      document.getElementById('ai-analysis').textContent = layout.analysis || 'Layout generated from specification.';
+      if (currentView === 'analysis') document.getElementById('ai-analysis').style.display = 'block';
+    } catch (e) {
+      renderFallback();
+      document.getElementById('ai-analysis').textContent = 'Sample layout rendered. Try pasting your own spec above for an AI-generated result.';
+    }
+
+    clearInterval(msgInterval);
+    document.getElementById('loader').classList.remove('active');
+    btn.disabled = false;
+    btnText.textContent = '⚡ Regenerate Layout';
+  }
+
+  function renderLayout(layout) {
+    const svg = document.getElementById('layoutSvg');
+    const W = layout.siteW || 440;
+    const H = layout.siteH || 300;
+    svg.setAttribute('viewBox', `0 0 ${W+20} ${H+20}`);
+
+    let html = `<rect width="${W+20}" height="${H+20}" fill="#0a0e17"/>`;
+    html += `<rect x="10" y="10" width="${W}" height="${H}" fill="#111827" stroke="#374151" stroke-width="1.5"/>`;
+    for (let gx = 50; gx < W; gx += 50) html += `<line x1="${gx+10}" y1="10" x2="${gx+10}" y2="${H+10}" stroke="rgba(59,130,246,0.05)" stroke-width="1"/>`;
+    for (let gy = 50; gy < H; gy += 50) html += `<line x1="10" y1="${gy+10}" x2="${W+10}" y2="${gy+10}" stroke="rgba(59,130,246,0.05)" stroke-width="1"/>`;
+
+    for (const el of (layout.elements || [])) {
+      if (el.type === 'rect') {
+        html += `<rect x="${el.x}" y="${el.y}" width="${el.w}" height="${el.h}" fill="${el.fill}" stroke="${el.stroke}" stroke-width="1.2" rx="2"/>`;
+        if (el.label) html += `<text x="${el.x+el.w/2}" y="${el.y+el.h/2-(el.sublabel?6:0)}" text-anchor="middle" dominant-baseline="middle" fill="#f0f4ff" font-size="9" font-family="monospace" font-weight="500">${el.label}</text>`;
+        if (el.sublabel) html += `<text x="${el.x+el.w/2}" y="${el.y+el.h/2+9}" text-anchor="middle" dominant-baseline="middle" fill="#8899bb" font-size="7.5" font-family="monospace">${el.sublabel}</text>`;
+      } else if (el.type === 'line') {
+        const dash = el.dash ? `stroke-dasharray="${el.dash}"` : '';
+        html += `<line x1="${el.x1}" y1="${el.y1}" x2="${el.x2}" y2="${el.y2}" stroke="${el.stroke}" stroke-width="1" ${dash}/>`;
+      } else if (el.type === 'circle') {
+        html += `<circle cx="${el.cx}" cy="${el.cy}" r="${el.r}" fill="${el.fill}" stroke="${el.stroke}" stroke-width="1.2"/>`;
+        if (el.label) html += `<text x="${el.cx}" y="${el.cy}" text-anchor="middle" dominant-baseline="middle" fill="#f0f4ff" font-size="8" font-family="monospace">${el.label}</text>`;
+      } else if (el.type === 'label') {
+        html += `<text x="${el.x}" y="${el.y}" fill="${el.color||'#8899bb'}" font-size="${el.size||9}" font-family="monospace">${el.text}</text>`;
+      }
+    }
+    svg.innerHTML = html;
+    svg.style.display = 'block';
+  }
+
+  function renderFallback() {
+    const svg = document.getElementById('layoutSvg');
+    svg.setAttribute('viewBox', '0 0 460 320');
+    svg.innerHTML = `
+      <rect width="460" height="320" fill="#0a0e17"/>
+      <rect x="10" y="10" width="440" height="300" fill="#111827" stroke="#374151" stroke-width="1.5"/>
+      ${Array.from({length:8},(_,i)=>`<line x1="${60*(i+1)+10}" y1="10" x2="${60*(i+1)+10}" y2="310" stroke="rgba(59,130,246,0.05)" stroke-width="1"/>`).join('')}
+      ${Array.from({length:5},(_,i)=>`<line x1="10" y1="${55*(i+1)+10}" x2="450" y2="${55*(i+1)+10}" stroke="rgba(59,130,246,0.05)" stroke-width="1"/>`).join('')}
+      <rect x="40" y="40" width="380" height="240" fill="none" stroke="#facc15" stroke-width="1" stroke-dasharray="4 2"/>
+      <text x="230" y="35" text-anchor="middle" fill="#facc15" font-size="8" font-family="monospace">--- SETBACK LINE ---</text>
+      <rect x="75" y="75" width="220" height="140" fill="#1e3a5f" stroke="#3b82f6" stroke-width="1.5" rx="2"/>
+      <text x="185" y="146" text-anchor="middle" dominant-baseline="middle" fill="#f0f4ff" font-size="10" font-family="monospace" font-weight="500">PROPOSED BUILDING</text>
+      <text x="185" y="160" text-anchor="middle" dominant-baseline="middle" fill="#8899bb" font-size="7.5" font-family="monospace">8,500 SF</text>
+      <rect x="310" y="75" width="100" height="140" fill="#172030" stroke="#4b5563" stroke-width="1" rx="2"/>
+      <text x="360" y="143" text-anchor="middle" dominant-baseline="middle" fill="#8899bb" font-size="9" font-family="monospace">PARKING</text>
+      <text x="360" y="156" text-anchor="middle" dominant-baseline="middle" fill="#8899bb" font-size="7.5" font-family="monospace">42 SPACES</text>
+      <rect x="75" y="230" width="110" height="40" fill="#0d2b1e" stroke="#10b981" stroke-width="1" rx="2"/>
+      <text x="130" y="252" text-anchor="middle" dominant-baseline="middle" fill="#6ee7b7" font-size="8.5" font-family="monospace">DETENTION POND</text>
+      <rect x="75" y="280" width="335" height="18" fill="#1f2937" stroke="#6b7280" stroke-width="1"/>
+      <text x="242" y="290" text-anchor="middle" dominant-baseline="middle" fill="#8899bb" font-size="8" font-family="monospace">ROAD / ACCESS</text>
+      <line x1="185" y1="280" x2="185" y2="215" stroke="#6b7280" stroke-width="1.5"/>
+      <text x="192" y="250" fill="#94a3b8" font-size="7.5" font-family="monospace">DRIVEWAY</text>
+      <rect x="415" y="14" width="25" height="25" fill="#1a2235" stroke="#374151" stroke-width="1" rx="2"/>
+      <text x="427" y="29" text-anchor="middle" dominant-baseline="middle" fill="#3b82f6" font-size="10" font-family="monospace" font-weight="500">N</text>
+      <line x1="427" y1="19" x2="427" y2="23" stroke="#3b82f6" stroke-width="1.5"/>
+      <text x="20" y="308" fill="#3b82f6" font-size="7.5" font-family="monospace">SCALE: 1" = 40'</text>
+      <line x1="80" y1="304" x2="140" y2="304" stroke="#94a3b8" stroke-width="1.5"/>
+      <line x1="80" y1="301" x2="80" y2="307" stroke="#94a3b8" stroke-width="1.5"/>
+      <line x1="140" y1="301" x2="140" y2="307" stroke="#94a3b8" stroke-width="1.5"/>
+    `;
+    svg.style.display = 'block';
+    lastLayout = { fallback: true };
+  }
+
+  function joinWaitlist() {
+    const email = document.getElementById('emailInput').value;
+    if (!email || !email.includes('@')) {
+      const inp = document.getElementById('emailInput');
+      inp.style.borderColor = 'rgba(255,80,80,0.5)';
+      setTimeout(() => inp.style.borderColor = '', 1500);
+      return;
+    }
+    document.getElementById('waitlist-msg').style.display = 'block';
+    document.getElementById('emailInput').value = '';
+  }
+
+  renderFallback();
+</script>
+</body>
+</html>
