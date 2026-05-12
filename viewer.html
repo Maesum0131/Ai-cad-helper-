@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI CAD Helper — 3D BIM Viewer</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0a0e17;
+  --surface: #111827;
+  --surface2: #1a2235;
+  --surface3: #1e293b;
+  --border: rgba(99,183,255,0.12);
+  --border2: rgba(99,183,255,0.25);
+  --accent: #3b82f6;
+  --accent2: #06b6d4;
+  --text: #f0f4ff;
+  --muted: #8899bb;
+  --dim: #4a5568;
+  --success: #10b981;
+  --warn: #facc15;
+}
+html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; }
+
+/* NAV */
+nav {
+  height: 48px; display: flex; align-items: center; justify-content: space-between;
+  padding: 0 16px; border-bottom: 1px solid var(--border);
+  background: var(--surface); z-index: 100; position: relative;
+}
+.logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 0.95rem; display: flex; align-items: center; gap: 8px; text-decoration: none; color: var(--text); }
+.logo-icon { width: 26px; height: 26px; background: linear-gradient(135deg,#3b82f6,#06b6d4); border-radius: 5px; display: flex; align-items: center; justify-content: center; font-size: 13px; }
+.logo-badge { font-family: 'DM Mono', monospace; font-size: 0.58rem; background: rgba(16,185,129,0.15); color: var(--success); border: 1px solid rgba(16,185,129,0.3); border-radius: 4px; padding: 1px 6px; }
+.nav-center { display: flex; gap: 4px; }
+.nav-tab { padding: 4px 14px; border-radius: 6px; font-size: 0.8rem; color: var(--muted); cursor: pointer; text-decoration: none; transition: all 0.15s; border: 1px solid transparent; font-family: 'DM Sans', sans-serif; }
+.nav-tab:hover { color: var(--text); background: var(--surface2); }
+.nav-tab.active { color: var(--text); background: var(--surface2); border-color: var(--border); }
+.nav-right { display: flex; gap: 8px; align-items: center; }
+.btn-sm { padding: 0.3rem 0.9rem; border-radius: 5px; font-size: 0.78rem; font-family: 'DM Sans', sans-serif; font-weight: 500; cursor: pointer; border: 1px solid var(--border2); background: transparent; color: var(--muted); transition: all 0.15s; }
+.btn-sm:hover { color: var(--text); background: var(--surface2); }
+.btn-sm.primary { background: var(--accent); color: white; border-color: var(--accent); }
+.btn-sm.primary:hover { background: #2563eb; }
+
+/* LAYOUT */
+.app { display: flex; height: calc(100vh - 48px); }
+
+/* LEFT PANEL */
+.left-panel { width: 240px; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; flex-shrink: 0; }
+.panel-section { border-bottom: 1px solid var(--border); }
+.panel-header { padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; }
+.panel-label { font-family: 'DM Mono', monospace; font-size: 0.62rem; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; }
+.panel-body { padding: 10px; }
+
+/* Layer types */
+.layer-types { display: flex; flex-direction: column; gap: 3px; }
+.layer-type-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 6px; cursor: pointer; transition: background 0.1s; border: 1px solid transparent; }
+.layer-type-item:hover { background: var(--surface2); }
+.layer-type-item.active { background: rgba(59,130,246,0.1); border-color: rgba(59,130,246,0.2); }
+.layer-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+.layer-type-name { font-size: 0.78rem; color: var(--text); flex: 1; }
+.layer-type-count { font-family: 'DM Mono', monospace; font-size: 0.62rem; color: var(--muted); }
+.layer-toggle { width: 14px; height: 14px; border-radius: 3px; border: 1px solid var(--border2); background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 9px; }
+
+/* Import box */
+.import-zone { border: 1px dashed var(--border2); border-radius: 8px; padding: 16px 10px; text-align: center; cursor: pointer; transition: all 0.2s; }
+.import-zone:hover { border-color: var(--accent); background: rgba(59,130,246,0.05); }
+.import-icon { font-size: 24px; margin-bottom: 6px; }
+.import-text { font-size: 0.72rem; color: var(--muted); line-height: 1.5; font-family: 'DM Mono', monospace; }
+.import-text strong { color: var(--accent); display: block; font-size: 0.75rem; margin-bottom: 2px; }
+
+/* Object tree */
+.obj-tree { max-height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
+.obj-item { display: flex; align-items: center; gap: 6px; padding: 4px 6px; border-radius: 4px; cursor: pointer; font-size: 0.7rem; font-family: 'DM Mono', monospace; color: var(--muted); transition: all 0.1s; }
+.obj-item:hover { background: var(--surface2); color: var(--text); }
+.obj-item.selected { background: rgba(59,130,246,0.1); color: var(--accent); }
+.obj-icon { font-size: 10px; width: 14px; }
+
+/* VIEWER */
+.viewer-wrap { flex: 1; position: relative; overflow: hidden; background: #060a10; }
+#threeCanvas { position: absolute; inset: 0; width: 100% !important; height: 100% !important; }
+
+/* Viewer overlays */
+.viewer-toolbar {
+  position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 3px; background: rgba(10,14,23,0.85);
+  border: 1px solid var(--border2); border-radius: 8px; padding: 4px;
+  backdrop-filter: blur(8px); z-index: 10;
+}
+.view-btn { padding: 5px 12px; border-radius: 5px; border: none; background: transparent; color: var(--muted); cursor: pointer; font-family: 'DM Mono', monospace; font-size: 0.65rem; transition: all 0.15s; }
+.view-btn:hover { color: var(--text); background: var(--surface2); }
+.view-btn.active { background: var(--accent); color: white; }
+
+.viewer-controls {
+  position: absolute; bottom: 12px; right: 12px;
+  display: flex; flex-direction: column; gap: 3px;
+  background: rgba(10,14,23,0.85); border: 1px solid var(--border2);
+  border-radius: 8px; padding: 6px; backdrop-filter: blur(8px); z-index: 10;
+}
+.ctrl-btn { width: 30px; height: 30px; border-radius: 5px; border: 1px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+.ctrl-btn:hover { color: var(--text); background: var(--surface2); border-color: var(--border2); }
+
+.viewer-info {
+  position: absolute; bottom: 12px; left: 12px;
+  background: rgba(10,14,23,0.85); border: 1px solid var(--border);
+  border-radius: 8px; padding: 8px 12px;
+  font-family: 'DM Mono', monospace; font-size: 0.62rem; color: var(--muted);
+  backdrop-filter: blur(8px); z-index: 10; display: flex; flex-direction: column; gap: 3px;
+}
+.info-row { display: flex; gap: 8px; }
+.info-key { color: var(--dim); }
+.info-val { color: var(--text); }
+
+.viewer-badge {
+  position: absolute; top: 12px; left: 12px;
+  background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3);
+  border-radius: 6px; padding: 4px 10px;
+  font-family: 'DM Mono', monospace; font-size: 0.62rem; color: var(--success);
+  backdrop-filter: blur(8px); z-index: 10; display: flex; align-items: center; gap: 5px;
+}
+.badge-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--success); animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.3} }
+
+/* Selected object panel */
+.selected-panel {
+  position: absolute; top: 60px; right: 12px;
+  width: 200px; background: rgba(10,14,23,0.9);
+  border: 1px solid var(--border2); border-radius: 10px;
+  padding: 12px; backdrop-filter: blur(8px); z-index: 10;
+  display: none;
+}
+.selected-panel.show { display: block; }
+.sel-title { font-family: 'Syne', sans-serif; font-size: 0.85rem; font-weight: 700; margin-bottom: 8px; color: var(--text); }
+.sel-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.sel-key { font-family: 'DM Mono', monospace; font-size: 0.62rem; color: var(--muted); }
+.sel-val { font-family: 'DM Mono', monospace; font-size: 0.65rem; color: var(--text); }
+.sel-color { width: 14px; height: 14px; border-radius: 3px; border: 1px solid var(--border2); }
+
+/* Empty state */
+.empty-state {
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 12px; z-index: 5;
+  pointer-events: none;
+}
+.empty-icon { font-size: 48px; opacity: 0.2; }
+.empty-title { font-family: 'Syne', sans-serif; font-size: 1.1rem; font-weight: 700; color: var(--muted); }
+.empty-sub { font-family: 'DM Mono', monospace; font-size: 0.7rem; color: var(--dim); text-align: center; line-height: 1.6; max-width: 280px; }
+
+/* RIGHT PANEL */
+.right-panel { width: 220px; background: var(--surface); border-left: 1px solid var(--border); display: flex; flex-direction: column; overflow-y: auto; flex-shrink: 0; }
+.prop-empty { padding: 20px 12px; font-family: 'DM Mono', monospace; font-size: 0.65rem; color: var(--dim); text-align: center; line-height: 1.7; }
+.prop-group { border-bottom: 1px solid var(--border); padding: 10px 12px; }
+.prop-group-label { font-family: 'DM Mono', monospace; font-size: 0.6rem; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 8px; }
+.prop-row { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; }
+.prop-label { font-family: 'DM Mono', monospace; font-size: 0.62rem; color: var(--muted); width: 60px; flex-shrink: 0; }
+.prop-val { font-family: 'DM Mono', monospace; font-size: 0.65rem; color: var(--text); }
+.prop-input { flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; color: var(--text); font-family: 'DM Mono', monospace; font-size: 0.65rem; padding: 3px 6px; outline: none; transition: border-color 0.15s; }
+.prop-input:focus { border-color: rgba(59,130,246,0.4); }
+
+/* Status bar */
+.statusbar { height: 26px; background: var(--surface); border-top: 1px solid var(--border); display: flex; align-items: center; padding: 0 12px; gap: 16px; flex-shrink: 0; position: absolute; bottom: 0; left: 0; right: 0; }
+.status-item { font-family: 'DM Mono', monospace; font-size: 0.6rem; color: var(--muted); }
+.status-item span { color: var(--text); }
+
+/* Toast */
+.toast { position: fixed; bottom: 36px; left: 50%; transform: translateX(-50%); background: var(--surface); border: 1px solid var(--border2); border-radius: 8px; padding: 7px 14px; font-family: 'DM Mono', monospace; font-size: 0.7rem; color: var(--text); z-index: 999; opacity: 0; transition: opacity 0.3s; pointer-events: none; white-space: nowrap; }
+.toast.show { opacity: 1; }
+
+/* Generate from 2D btn */
+.generate-3d-btn { width: 100%; padding: 8px; background: linear-gradient(135deg,#3b82f6,#06b6d4); border: none; border-radius: 7px; color: white; font-family: 'DM Sans', sans-serif; font-size: 0.8rem; font-weight: 500; cursor: pointer; transition: opacity 0.2s; margin-top: 4px; }
+.generate-3d-btn:hover { opacity: 0.85; }
+.generate-3d-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* IFC Export btn */
+.export-row { display: flex; gap: 4px; margin-top: 6px; }
+.export-btn { flex: 1; padding: 6px 4px; border-radius: 5px; border: 1px solid var(--border2); background: transparent; color: var(--muted); cursor: pointer; font-family: 'DM Mono', monospace; font-size: 0.62rem; transition: all 0.15s; text-align: center; }
+.export-btn:hover { color: var(--text); background: var(--surface2); }
+.export-btn.highlight { border-color: rgba(16,185,129,0.3); color: var(--success); background: rgba(16,185,129,0.08); }
+.export-btn.highlight:hover { background: rgba(16,185,129,0.15); }
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="logo" href="index.html">
+    <div class="logo-icon">⬡</div>
+    AI CAD Helper
+    <span class="logo-badge">BIM VIEWER</span>
+  </a>
+  <div class="nav-center">
+    <a class="nav-tab" href="editor.html">2D Editor</a>
+    <a class="nav-tab active" href="viewer.html">3D BIM Viewer</a>
+  </div>
+  <div class="nav-right">
+    <button class="btn-sm" onclick="exportIFC()">↓ IFC</button>
+    <button class="btn-sm" onclick="exportOBJ()">↓ OBJ</button>
+    <button class="btn-sm primary" onclick="document.getElementById('fileInput').click()">Import Model</button>
+  </div>
+</nav>
+
+<div class="app">
+  <!-- LEFT PANEL -->
+  <div class="left-panel">
+    <!-- Import -->
+    <div class="panel-section">
+      <div class="panel-body">
+        <div class="import-zone" onclick="document.getElementById('fileInput').click()">
+          <div class="import-icon">📁</div>
+          <div class="import-text">
+            <strong>Import / Drop File</strong>
+            IFC · OBJ · DXF · JSON
+          </div>
+        </div>
+        <button class="generate-3d-btn" id="gen3dBtn" onclick="generateFrom2D()">
+          ⬡ Generate 3D from 2D Layout
+        </button>
+        <div class="export-row">
+          <button class="export-btn highlight" onclick="exportIFC()">IFC</button>
+          <button class="export-btn" onclick="exportOBJ()">OBJ</button>
+          <button class="export-btn" onclick="exportDXF()">DXF</button>
+          <button class="export-btn" onclick="takeScreenshot()">PNG</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Layers -->
+    <div class="panel-section">
+      <div class="panel-header">
+        <span class="panel-label">⊟ Layers</span>
+        <span style="font-family:'DM Mono',monospace;font-size:0.6rem;color:var(--accent);cursor:pointer" onclick="toggleAllLayers()">toggle all</span>
+      </div>
+      <div class="panel-body">
+        <div class="layer-types" id="layerTypes">
+          <div class="layers-empty" style="font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--dim);text-align:center;padding:12px 0">No model loaded</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Object Tree -->
+    <div class="panel-section" style="flex:1;overflow:hidden;display:flex;flex-direction:column;">
+      <div class="panel-header">
+        <span class="panel-label">⊞ Objects</span>
+        <span id="objCount" style="font-family:'DM Mono',monospace;font-size:0.6rem;color:var(--muted)">0</span>
+      </div>
+      <div class="panel-body" style="flex:1;overflow-y:auto;padding:6px;">
+        <div class="obj-tree" id="objTree">
+          <div style="font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--dim);text-align:center;padding:12px 0">No objects</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3D VIEWER -->
+  <div class="viewer-wrap" id="viewerWrap">
+    <canvas id="threeCanvas"></canvas>
+
+    <div class="empty-state" id="emptyState">
+      <div class="empty-icon">⬡</div>
+      <div class="empty-title">No Model Loaded</div>
+      <div class="empty-sub">Click "Generate 3D from 2D Layout" to convert your site plan, or import an IFC/OBJ file</div>
+    </div>
+
+    <div class="viewer-badge" id="viewerBadge" style="display:none">
+      <div class="badge-dot"></div>
+      <span id="badgeText">3D BIM Model</span>
+    </div>
+
+    <div class="viewer-toolbar" id="viewerToolbar" style="display:none">
+      <button class="view-btn active" id="btn-perspective" onclick="setView('perspective')">3D</button>
+      <button class="view-btn" id="btn-top" onclick="setView('top')">Top</button>
+      <button class="view-btn" id="btn-front" onclick="setView('front')">Front</button>
+      <button class="view-btn" id="btn-side" onclick="setView('side')">Side</button>
+      <button class="view-btn" id="btn-wireframe" onclick="toggleWireframe()">Wire</button>
+      <button class="view-btn" id="btn-xray" onclick="toggleXray()">X-Ray</button>
+    </div>
+
+    <div class="viewer-controls" id="viewerControls" style="display:none">
+      <button class="ctrl-btn" onclick="zoomIn()" title="Zoom In">+</button>
+      <button class="ctrl-btn" onclick="zoomOut()" title="Zoom Out">−</button>
+      <button class="ctrl-btn" onclick="resetCamera()" title="Reset View">⟳</button>
+      <button class="ctrl-btn" onclick="fitModel()" title="Fit to Screen">⛶</button>
+    </div>
+
+    <div class="viewer-info" id="viewerInfo" style="display:none">
+      <div class="info-row"><span class="info-key">Objects</span><span class="info-val" id="infoObjects">0</span></div>
+      <div class="info-row"><span class="info-key">Polygons</span><span class="info-val" id="infoPolys">0</span></div>
+      <div class="info-row"><span class="info-key">View</span><span class="info-val" id="infoView">Perspective</span></div>
+    </div>
+
+    <div class="selected-panel" id="selectedPanel">
+      <div class="sel-title" id="selTitle">Building</div>
+      <div id="selProps"></div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="right-panel">
+    <div class="prop-empty" id="propEmpty">Click an object in the viewer to inspect its BIM properties</div>
+    <div id="propEditor" style="display:none"></div>
+
+    <!-- Scene settings always shown -->
+    <div class="prop-group" style="margin-top:auto">
+      <div class="prop-group-label">Scene Settings</div>
+      <div class="prop-row">
+        <span class="prop-label">Ambient</span>
+        <input type="color" value="#1a2a4a" class="prop-input" style="padding:1px;height:24px" onchange="setAmbient(this.value)">
+      </div>
+      <div class="prop-row">
+        <span class="prop-label">Sky</span>
+        <input type="color" value="#060a10" class="prop-input" style="padding:1px;height:24px" onchange="setSky(this.value)">
+      </div>
+      <div class="prop-row">
+        <span class="prop-label">Shadows</span>
+        <input type="checkbox" checked onchange="toggleShadows(this.checked)">
+      </div>
+      <div class="prop-row">
+        <span class="prop-label">Ground</span>
+        <input type="checkbox" checked onchange="toggleGround(this.checked)">
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<input type="file" id="fileInput" accept=".ifc,.obj,.json,.dxf" style="display:none" onchange="importFile(event)">
+
+<script>
+// ═══════════════════════════════════════════════════════
+// THREE.JS SCENE SETUP
+// ═══════════════════════════════════════════════════════
+const canvas = document.getElementById('threeCanvas');
+const wrap = document.getElementById('viewerWrap');
+
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+renderer.setPixelRatio(window.devicePixelRatio);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.2;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color('#060a10');
+scene.fog = new THREE.FogExp2('#060a10', 0.008);
+
+const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 10000);
+camera.position.set(200, 180, 280);
+camera.lookAt(0, 0, 0);
+
+// Lights
+const ambientLight = new THREE.AmbientLight('#1a2a4a', 1.5);
+scene.add(ambientLight);
+
+const dirLight = new THREE.DirectionalLight('#ffffff', 2);
+dirLight.position.set(200, 400, 150);
+dirLight.castShadow = true;
+dirLight.shadow.mapSize.width = 2048;
+dirLight.shadow.mapSize.height = 2048;
+dirLight.shadow.camera.near = 10;
+dirLight.shadow.camera.far = 1500;
+dirLight.shadow.camera.left = -400;
+dirLight.shadow.camera.right = 400;
+dirLight.shadow.camera.top = 400;
+dirLight.shadow.camera.bottom = -400;
+scene.add(dirLight);
+
+const fillLight = new THREE.DirectionalLight('#3b82f6', 0.4);
+fillLight.position.set(-100, 100, -200);
+scene.add(fillLight);
+
+const rimLight = new THREE.DirectionalLight('#06b6d4', 0.3);
+rimLight.position.set(0, 50, -300);
+scene.add(rimLight);
+
+// Ground grid
+let groundMesh, gridHelper;
+function createGround() {
+  const geo = new THREE.PlaneGeometry(2000, 2000);
+  const mat = new THREE.MeshStandardMaterial({ color: '#0d1320', roughness: 0.9, metalness: 0 });
+  groundMesh = new THREE.Mesh(geo, mat);
+  groundMesh.rotation.x = -Math.PI/2;
+  groundMesh.position.y = -0.5;
+  groundMesh.receiveShadow = true;
+  scene.add(groundMesh);
+
+  gridHelper = new THREE.GridHelper(1000, 50, '#1a2a3a', '#111827');
+  gridHelper.position.y = 0;
+  scene.add(gridHelper);
+}
+createGround();
+
+// ═══════════════════════════════════════════════════════
+// ORBIT CONTROLS (manual implementation)
+// ═══════════════════════════════════════════════════════
+let isOrbiting = false, isPanning = false;
+let prevMouse = { x: 0, y: 0 };
+let spherical = { r: 400, theta: Math.PI/4, phi: Math.PI/3 };
+let target = new THREE.Vector3(0, 0, 0);
+
+function updateCamera() {
+  camera.position.x = target.x + spherical.r * Math.sin(spherical.phi) * Math.sin(spherical.theta);
+  camera.position.y = target.y + spherical.r * Math.cos(spherical.phi);
+  camera.position.z = target.z + spherical.r * Math.sin(spherical.phi) * Math.cos(spherical.theta);
+  camera.lookAt(target);
+}
+updateCamera();
+
+canvas.addEventListener('mousedown', e => {
+  if (e.button === 0) isOrbiting = true;
+  if (e.button === 1 || e.button === 2) isPanning = true;
+  prevMouse = { x: e.clientX, y: e.clientY };
+});
+canvas.addEventListener('contextmenu', e => e.preventDefault());
+window.addEventListener('mouseup', () => { isOrbiting = false; isPanning = false; });
+window.addEventListener('mousemove', e => {
+  const dx = e.clientX - prevMouse.x, dy = e.clientY - prevMouse.y;
+  if (isOrbiting) {
+    spherical.theta -= dx * 0.008;
+    spherical.phi = Math.max(0.1, Math.min(Math.PI - 0.1, spherical.phi + dy * 0.008));
+    updateCamera();
+  }
+  if (isPanning) {
+    const right = new THREE.Vector3();
+    const up = new THREE.Vector3();
+    right.crossVectors(camera.getWorldDirection(new THREE.Vector3()), camera.up).normalize();
+    up.copy(camera.up);
+    target.addScaledVector(right, -dx * 0.3);
+    target.addScaledVector(up, dy * 0.3);
+    updateCamera();
+  }
+  prevMouse = { x: e.clientX, y: e.clientY };
+});
+canvas.addEventListener('wheel', e => {
+  e.preventDefault();
+  spherical.r = Math.max(20, Math.min(2000, spherical.r * (1 + e.deltaY * 0.001)));
+  updateCamera();
+}, { passive: false });
+
+// Touch support
+let lastTouchDist = 0;
+canvas.addEventListener('touchstart', e => {
+  if (e.touches.length === 1) { isOrbiting = true; prevMouse = { x: e.touches[0].clientX, y: e.touches[0].clientY }; }
+  if (e.touches.length === 2) { lastTouchDist = Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY); }
+});
+canvas.addEventListener('touchmove', e => {
+  e.preventDefault();
+  if (e.touches.length === 1 && isOrbiting) {
+    const dx = e.touches[0].clientX - prevMouse.x, dy = e.touches[0].clientY - prevMouse.y;
+    spherical.theta -= dx * 0.008; spherical.phi = Math.max(0.1, Math.min(Math.PI-0.1, spherical.phi + dy * 0.008));
+    prevMouse = { x: e.touches[0].clientX, y: e.touches[0].clientY }; updateCamera();
+  }
+  if (e.touches.length === 2) {
+    const d = Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
+    spherical.r = Math.max(20, Math.min(2000, spherical.r * (lastTouchDist/d)));
+    lastTouchDist = d; updateCamera();
+  }
+}, { passive: false });
+canvas.addEventListener('touchend', () => { isOrbiting = false; });
+
+// ═══════════════════════════════════════════════════════
+// SCENE OBJECTS & STATE
+// ═══════════════════════════════════════════════════════
+let sceneObjects = [];
+let selectedObject = null;
+let wireframeMode = false;
+let xrayMode = false;
+let shadowsEnabled = true;
+let layerVisibility = {};
+
+const TYPE_COLORS_3D = {
+  building:   { color: '#1e3a5f', emissive: '#0a1525', height: 35, roughness: 0.6, metalness: 0.1 },
+  road:       { color: '#1a2030', emissive: '#080c14', height: 1,  roughness: 0.9, metalness: 0   },
+  parking:    { color: '#172030', emissive: '#08101a', height: 0.5, roughness: 0.8, metalness: 0  },
+  pond:       { color: '#0d4a2e', emissive: '#051a10', height: 0.3, roughness: 0.1, metalness: 0.8},
+  setback:    { color: '#2a2210', emissive: '#0a0800', height: 0.2, roughness: 1.0, metalness: 0  },
+  utility:    { color: '#1c1030', emissive: '#0a0618', height: 0.3, roughness: 0.5, metalness: 0.5},
+  greenspace: { color: '#0f3018', emissive: '#040c06', height: 0.5, roughness: 1.0, metalness: 0  },
+  generic:    { color: '#1e293b', emissive: '#080e18', height: 10,  roughness: 0.7, metalness: 0.1},
+};
+
+const LAYER_COLORS = {
+  building: '#3b82f6', road: '#6b7280', parking: '#4b5563',
+  pond: '#10b981', setback: '#facc15', utility: '#8b5cf6',
+  greenspace: '#22c55e', generic: '#475569', label: '#94a3b8'
+};
+
+// ═══════════════════════════════════════════════════════
+// RAYCASTING FOR CLICK SELECTION
+// ═══════════════════════════════════════════════════════
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+
+canvas.addEventListener('click', e => {
+  if (Math.abs(e.clientX - prevMouse.x) > 3) return; // was dragging
+  const rect = canvas.getBoundingClientRect();
+  mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+  mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+  raycaster.setFromCamera(mouse, camera);
+  const meshes = sceneObjects.map(o => o.mesh).filter(Boolean);
+  const hits = raycaster.intersectObjects(meshes, false);
+  if (hits.length) {
+    const hit = hits[0].object;
+    const obj = sceneObjects.find(o => o.mesh === hit);
+    if (obj) selectObject(obj);
+  } else {
+    deselectObject();
+  }
+});
+
+function selectObject(obj) {
+  if (selectedObject) deselectObject();
+  selectedObject = obj;
+  if (obj.mesh && obj.mesh.material) {
+    obj._origEmissive = obj.mesh.material.emissive?.getHex();
+    obj.mesh.material.emissive = new THREE.Color('#3b82f6');
+    obj.mesh.material.emissiveIntensity = 0.3;
+  }
+  showProperties(obj);
+  document.querySelectorAll('.obj-item').forEach(el => el.classList.remove('selected'));
+  const item = document.getElementById('obj_'+obj.id);
+  if (item) { item.classList.add('selected'); item.scrollIntoView({ block: 'nearest' }); }
+}
+
+function deselectObject() {
+  if (selectedObject?.mesh?.material) {
+    selectedObject.mesh.material.emissive = new THREE.Color(selectedObject._origEmissive || 0);
+    selectedObject.mesh.material.emissiveIntensity = 0.05;
+  }
+  selectedObject = null;
+  document.getElementById('propEmpty').style.display = 'block';
+  document.getElementById('propEditor').style.display = 'none';
+  document.querySelectorAll('.obj-item').forEach(el => el.classList.remove('selected'));
+}
+
+function showProperties(obj) {
+  document.getElementById('propEmpty').style.display = 'none';
+  const editor = document.getElementById('propEditor');
+  editor.style.display = 'block';
+  const c = TYPE_COLORS_3D[obj.elType] || TYPE_COLORS_3D.generic;
+  editor.innerHTML = `
+    <div class="prop-group">
+      <div class="prop-group-label">Identity</div>
+      <div class="prop-row"><span class="prop-label">Name</span><span class="prop-val">${obj.label||'Unnamed'}</span></div>
+      <div class="prop-row"><span class="prop-label">Type</span><span class="prop-val">${obj.elType||'generic'}</span></div>
+      <div class="prop-row"><span class="prop-label">ID</span><span class="prop-val" style="color:var(--dim)">${obj.id}</span></div>
+    </div>
+    <div class="prop-group">
+      <div class="prop-group-label">Dimensions</div>
+      <div class="prop-row"><span class="prop-label">Width</span><span class="prop-val">${Math.round(obj.w||0)} ft</span></div>
+      <div class="prop-row"><span class="prop-label">Depth</span><span class="prop-val">${Math.round(obj.h||0)} ft</span></div>
+      <div class="prop-row"><span class="prop-label">Height</span><span class="prop-val">${c.height} ft</span></div>
+      <div class="prop-row"><span class="prop-label">Area</span><span class="prop-val">${Math.round((obj.w||0)*(obj.h||0))} sqft</span></div>
+    </div>
+    <div class="prop-group">
+      <div class="prop-group-label">Material</div>
+      <div class="prop-row"><span class="prop-label">Color</span><div class="sel-color" style="background:${LAYER_COLORS[obj.elType]||'#475569'}"></div></div>
+      <div class="prop-row"><span class="prop-label">Roughness</span><span class="prop-val">${c.roughness}</span></div>
+      <div class="prop-row"><span class="prop-label">Metalness</span><span class="prop-val">${c.metalness}</span></div>
+    </div>
+    <div class="prop-group">
+      <div class="prop-group-label">IFC Data</div>
+      <div class="prop-row"><span class="prop-label">Class</span><span class="prop-val">Ifc${capitalize(obj.elType||'BuildingElement')}</span></div>
+      <div class="prop-row"><span class="prop-label">GUID</span><span class="prop-val" style="color:var(--dim);font-size:0.55rem">${generateGUID()}</span></div>
+    </div>
+  `;
+}
+
+// ═══════════════════════════════════════════════════════
+// BUILD 3D SCENE FROM ELEMENTS
+// ═══════════════════════════════════════════════════════
+function buildScene(elements) {
+  // Clear existing
+  sceneObjects.forEach(o => { if (o.mesh) scene.remove(o.mesh); });
+  sceneObjects = [];
+
+  if (!elements?.length) return;
+
+  // Center offset
+  let minX=Infinity, minY=Infinity, maxX=-Infinity, maxY=-Infinity;
+  elements.filter(el=>el.type==='rect').forEach(el => {
+    minX=Math.min(minX,el.x); minY=Math.min(minY,el.y);
+    maxX=Math.max(maxX,el.x+(el.w||0)); maxY=Math.max(maxY,el.y+(el.h||0));
+  });
+  const cx = (minX+maxX)/2, cy = (minY+maxY)/2;
+
+  const layerCounts = {};
+
+  for (const el of elements) {
+    const colors = TYPE_COLORS_3D[el.elType] || TYPE_COLORS_3D.generic;
+    let mesh;
+
+    if (el.type === 'rect' && el.elType !== 'setback') {
+      const w = el.w || 10, d = el.h || 10;
+      const h = el.elType === 'road' ? 0.8 : el.elType === 'parking' ? 0.4 : el.elType === 'greenspace' ? 0.5 : colors.height;
+      const geo = new THREE.BoxGeometry(w, h, d);
+      const mat = new THREE.MeshStandardMaterial({
+        color: new THREE.Color(colors.color),
+        emissive: new THREE.Color(colors.emissive),
+        emissiveIntensity: 0.05,
+        roughness: colors.roughness,
+        metalness: colors.metalness,
+      });
+      mesh = new THREE.Mesh(geo, mat);
+      mesh.position.set(el.x + w/2 - cx, h/2, el.y + d/2 - cy);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+
+      // Add edge highlight
+      const edges = new THREE.EdgesGeometry(geo);
+      const edgeMat = new THREE.LineBasicMaterial({ color: new THREE.Color(LAYER_COLORS[el.elType]||'#2a3a4a'), transparent: true, opacity: 0.4 });
+      const edgeLines = new THREE.LineSegments(edges, edgeMat);
+      mesh.add(edgeLines);
+
+    } else if (el.type === 'setback') {
+      // Setback as flat outline
+      const w = el.w||10, d = el.h||10;
+      const shape = new THREE.Shape();
+      shape.moveTo(-w/2,-d/2); shape.lineTo(w/2,-d/2); shape.lineTo(w/2,d/2); shape.lineTo(-w/2,d/2); shape.closePath();
+      const geo = new THREE.ShapeGeometry(shape);
+      const mat = new THREE.MeshBasicMaterial({ color: '#facc15', transparent: true, opacity: 0.08, side: THREE.DoubleSide });
+      mesh = new THREE.Mesh(geo, mat);
+      mesh.rotation.x = -Math.PI/2;
+      mesh.position.set(el.x+w/2-cx, 0.3, el.y+d/2-cy);
+      // Outline
+      const edgeGeo = new THREE.EdgesGeometry(new THREE.BoxGeometry(w,0.1,d));
+      const edgeMat = new THREE.LineBasicMaterial({ color: '#facc15', transparent: true, opacity: 0.6 });
+      const outline = new THREE.LineSegments(edgeGeo, edgeMat);
+      outline.position.set(el.x+w/2-cx, 0.3, el.y+d/2-cy);
+      scene.add(outline);
+
+    } else if (el.type === 'circle') {
+      const r = el.r || 40;
+      const geo = new THREE.CylinderGeometry(r, r, 1.5, 32);
+      const mat = new THREE.MeshStandardMaterial({ color: '#0d4a2e', emissive: '#051a10', emissiveIntensity: 0.1, roughness: 0.1, metalness: 0.7 });
+      mesh = new THREE.Mesh(geo, mat);
+      const wcx = (el.cx||el.x+r) - cx, wcy = (el.cy||el.y+r) - cy;
+      mesh.position.set(wcx, 0.75, wcy);
+      mesh.castShadow = true; mesh.receiveShadow = true;
+
+    } else if (el.type === 'line') {
+      const points = [
+        new THREE.Vector3(el.x-cx, 1, el.y-cy),
+        new THREE.Vector3(el.x2-cx, 1, el.y2-cy)
+      ];
+      const geo = new THREE.BufferGeometry().setFromPoints(points);
+      const mat = new THREE.LineBasicMaterial({ color: LAYER_COLORS[el.elType]||'#6b7280', transparent: true, opacity: 0.8 });
+      mesh = new THREE.Line(geo, mat);
+    }
+
+    if (mesh) {
+      scene.add(mesh);
+      const obj = { ...el, mesh };
+      sceneObjects.push(obj);
+      layerCounts[el.elType] = (layerCounts[el.elType]||0) + 1;
+      if (!(el.elType in layerVisibility)) layerVisibility[el.elType] = true;
+    }
+  }
+
+  updateLayerPanel(layerCounts);
+  updateObjTree();
+  updateStats();
+  showViewerUI();
+  fitModel();
+  toast(`Loaded ${sceneObjects.length} objects`);
+}
+
+// ═══════════════════════════════════════════════════════
+// UI UPDATES
+// ═══════════════════════════════════════════════════════
+function showViewerUI() {
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('viewerBadge').style.display = 'flex';
+  document.getElementById('viewerToolbar').style.display = 'flex';
+  document.getElementById('viewerControls').style.display = 'flex';
+  document.getElementById('viewerInfo').style.display = 'flex';
+}
+
+function updateLayerPanel(counts) {
+  const container = document.getElementById('layerTypes');
+  container.innerHTML = Object.entries(counts).map(([type, count]) => `
+    <div class="layer-type-item active" id="layer_${type}" onclick="toggleLayer('${type}')">
+      <div class="layer-dot" style="background:${LAYER_COLORS[type]||'#475569'}"></div>
+      <span class="layer-type-name">${type}</span>
+      <span class="layer-type-count">${count}</span>
+      <span style="font-size:10px;color:var(--muted)">●</span>
+    </div>
+  `).join('');
+}
+
+function updateObjTree() {
+  const tree = document.getElementById('objTree');
+  document.getElementById('objCount').textContent = sceneObjects.length;
+  const icons = { building:'🏗', road:'🛣', parking:'🅿', pond:'💧', setback:'⬜', utility:'⚡', greenspace:'🌿', generic:'▭' };
+  tree.innerHTML = sceneObjects.map(obj => `
+    <div class="obj-item" id="obj_${obj.id}" onclick="selectObjById('${obj.id}')">
+      <span class="obj-icon">${icons[obj.elType]||'▭'}</span>
+      <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${obj.label||obj.elType||'object'}</span>
+    </div>
+  `).join('');
+}
+
+function updateStats() {
+  let polys = 0;
+  sceneObjects.forEach(o => { if (o.mesh?.geometry) polys += (o.mesh.geometry.attributes.position?.count||0)/3; });
+  document.getElementById('infoObjects').textContent = sceneObjects.length;
+  document.getElementById('infoPolys').textContent = Math.round(polys).toLocaleString();
+}
+
+function selectObjById(id) {
+  const obj = sceneObjects.find(o => o.id === id);
+  if (obj) selectObject(obj);
+}
+
+function toggleLayer(type) {
+  layerVisibility[type] = !layerVisibility[type];
+  sceneObjects.filter(o => o.elType === type).forEach(o => { if (o.mesh) o.mesh.visible = layerVisibility[type]; });
+  const el = document.getElementById('layer_'+type);
+  if (el) el.classList.toggle('active', layerVisibility[type]);
+}
+
+function toggleAllLayers() {
+  const allOn = Object.values(layerVisibility).every(v=>v);
+  Object.keys(layerVisibility).forEach(type => {
+    layerVisibility[type] = !allOn;
+    sceneObjects.filter(o=>o.elType===type).forEach(o=>{ if(o.mesh) o.mesh.visible = !allOn; });
+    const el = document.getElementById('layer_'+type);
+    if (el) el.classList.toggle('active', !allOn);
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// VIEW CONTROLS
+// ═══════════════════════════════════════════════════════
+function setView(v) {
+  document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('btn-'+v)?.classList.add('active');
+  document.getElementById('infoView').textContent = capitalize(v);
+  if (v==='perspective') { spherical.theta=Math.PI/4; spherical.phi=Math.PI/3; spherical.r=500; target.set(0,0,0); }
+  else if (v==='top') { spherical.phi=0.01; spherical.r=600; }
+  else if (v==='front') { spherical.theta=0; spherical.phi=Math.PI/2; spherical.r=500; }
+  else if (v==='side') { spherical.theta=Math.PI/2; spherical.phi=Math.PI/2; spherical.r=500; }
+  updateCamera();
+}
+
+function toggleWireframe() {
+  wireframeMode = !wireframeMode;
+  sceneObjects.forEach(o => { if (o.mesh?.material) o.mesh.material.wireframe = wireframeMode; });
+  document.getElementById('btn-wireframe').classList.toggle('active', wireframeMode);
+  toast('Wireframe ' + (wireframeMode?'on':'off'));
+}
+
+function toggleXray() {
+  xrayMode = !xrayMode;
+  sceneObjects.forEach(o => { if (o.mesh?.material) { o.mesh.material.transparent = xrayMode; o.mesh.material.opacity = xrayMode ? 0.3 : 1; } });
+  document.getElementById('btn-xray').classList.toggle('active', xrayMode);
+  toast('X-Ray ' + (xrayMode?'on':'off'));
+}
+
+function zoomIn() { spherical.r = Math.max(20, spherical.r * 0.8); updateCamera(); }
+function zoomOut() { spherical.r = Math.min(2000, spherical.r * 1.25); updateCamera(); }
+function resetCamera() { spherical={r:500,theta:Math.PI/4,phi:Math.PI/3}; target.set(0,0,0); updateCamera(); }
+function fitModel() {
+  if (!sceneObjects.length) return;
+  spherical.r = 600; spherical.theta=Math.PI/4; spherical.phi=Math.PI/3;
+  updateCamera();
+}
+
+function setAmbient(color) { ambientLight.color = new THREE.Color(color); }
+function setSky(color) { scene.background = new THREE.Color(color); scene.fog = new THREE.FogExp2(color, 0.008); }
+function toggleShadows(on) { shadowsEnabled=on; renderer.shadowMap.enabled=on; dirLight.castShadow=on; }
+function toggleGround(on) { if(groundMesh) groundMesh.visible=on; if(gridHelper) gridHelper.visible=on; }
+
+// ═══════════════════════════════════════════════════════
+// GENERATE 3D FROM 2D LAYOUT
+// ═══════════════════════════════════════════════════════
+async function generateFrom2D() {
+  // Try to load from localStorage (set by editor)
+  let elements = null;
+  try { elements = JSON.parse(localStorage.getItem('cad_elements')); } catch(e){}
+
+  if (!elements?.length) {
+    // Generate a sample layout via AI
+    const btn = document.getElementById('gen3dBtn');
+    btn.disabled = true; btn.textContent = '⏳ Generating...';
+    try {
+      const resp = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1000,
+          system: `Generate a civil engineering site plan as JSON. Return ONLY valid JSON, no markdown. Structure:
+{"elements":[{"type":"rect","elType":"building","x":80,"y":60,"w":200,"h":140,"label":"BUILDING","sublabel":"8500 SF","fill":"#1e3a5f","stroke":"#3b82f6"},{"type":"rect","elType":"setback","x":30,"y":30,"w":440,"h":340,"label":"SETBACK","fill":"transparent","stroke":"#facc15","dashed":true},{"type":"rect","elType":"parking","x":300,"y":60,"w":120,"h":140,"label":"PARKING","sublabel":"42 SPACES","fill":"#172030","stroke":"#4b5563"},{"type":"circle","elType":"pond","x":80,"y":220,"cx":140,"cy":270,"r":50,"w":100,"h":100,"label":"POND","fill":"#0d2b1e","stroke":"#10b981"},{"type":"rect","elType":"road","x":30,"y":340,"w":440,"h":30,"label":"ROAD","fill":"#1a2030","stroke":"#6b7280"},{"type":"rect","elType":"greenspace","x":300,"y":220,"w":120,"h":100,"label":"GREEN SPACE","fill":"#0f2a15","stroke":"#22c55e"}]}
+Generate a realistic commercial site plan with 6-10 elements.`,
+          messages: [{ role: 'user', content: 'Generate a complete commercial site plan layout.' }]
+        })
+      });
+      const data = await resp.json();
+      const raw = data.content?.[0]?.text?.replace(/```json|```/g,'').trim();
+      const parsed = JSON.parse(raw);
+      elements = parsed.elements;
+      if (elements) elements.forEach((el,i) => el.id = el.id || 'el_'+i);
+    } catch(e) {
+      // Use built-in sample
+      elements = getSampleElements();
+    }
+    btn.disabled = false; btn.textContent = '⬡ Generate 3D from 2D Layout';
+  }
+
+  document.getElementById('badgeText').textContent = '3D BIM Model — ' + elements.length + ' objects';
+  buildScene(elements);
+}
+
+function getSampleElements() {
+  return [
+    {id:'el_1',type:'rect',elType:'setback',x:20,y:20,w:460,h:360,label:'SITE BOUNDARY',fill:'transparent',stroke:'#facc15',dashed:true},
+    {id:'el_2',type:'rect',elType:'building',x:70,y:60,w:220,h:150,label:'MAIN BUILDING',sublabel:'8,500 SF'},
+    {id:'el_3',type:'rect',elType:'parking',x:310,y:60,w:140,h:150,label:'PARKING',sublabel:'42 SPACES'},
+    {id:'el_4',type:'circle',elType:'pond',x:70,y:230,cx:130,cy:285,r:55,w:110,h:110,label:'DETENTION POND'},
+    {id:'el_5',type:'rect',elType:'road',x:20,y:350,w:460,h:28,label:'ACCESS ROAD'},
+    {id:'el_6',type:'rect',elType:'greenspace',x:310,y:230,w:140,h:110,label:'GREEN SPACE'},
+    {id:'el_7',type:'line',elType:'utility',x:20,y:190,x2:70,y2:190,stroke:'#8b5cf6',dashed:true},
+    {id:'el_8',type:'rect',elType:'building',x:200,y:230,w:90,h:80,label:'UTILITY BLDG',sublabel:'720 SF'},
+  ];
+}
+
+// ═══════════════════════════════════════════════════════
+// IMPORT FILES
+// ═══════════════════════════════════════════════════════
+function importFile(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const ext = file.name.split('.').pop().toLowerCase();
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      if (ext === 'json') {
+        const data = JSON.parse(ev.target.result);
+        const elements = data.elements || data;
+        buildScene(elements);
+      } else if (ext === 'obj') {
+        parseOBJ(ev.target.result);
+      } else {
+        toast('Format support coming soon — use JSON or OBJ');
+      }
+    } catch(err) { toast('Error loading file'); }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+
+function parseOBJ(text) {
+  const vertices = [], faces = [];
+  text.split('\n').forEach(line => {
+    const parts = line.trim().split(/\s+/);
+    if (parts[0]==='v') vertices.push(new THREE.Vector3(+parts[1],+parts[2],+parts[3]));
+    if (parts[0]==='f') {
+      const idx = parts.slice(1).map(p=>parseInt(p.split('/')[0])-1);
+      for (let i=1;i<idx.length-1;i++) faces.push(idx[0],idx[i],idx[i+1]);
+    }
+  });
+  if (!vertices.length) { toast('No geometry found in OBJ'); return; }
+  const geo = new THREE.BufferGeometry();
+  const pos = new Float32Array(faces.length*3);
+  faces.forEach((vi,i) => { const v=vertices[vi]; pos[i*3]=v.x; pos[i*3+1]=v.y; pos[i*3+2]=v.z; });
+  geo.setAttribute('position', new THREE.BufferAttribute(pos,3));
+  geo.computeVertexNormals();
+  const mat = new THREE.MeshStandardMaterial({ color:'#1e3a5f', roughness:0.6, metalness:0.1 });
+  const mesh = new THREE.Mesh(geo, mat);
+  sceneObjects.forEach(o=>{ if(o.mesh) scene.remove(o.mesh); });
+  sceneObjects = [{ id:'obj_1', type:'rect', elType:'building', label:file?.name||'OBJ Model', mesh, w:100, h:100 }];
+  scene.add(mesh);
+  showViewerUI(); fitModel(); updateObjTree(); updateStats();
+  toast('OBJ imported');
+}
+
+// ═══════════════════════════════════════════════════════
+// EXPORTS
+// ═══════════════════════════════════════════════════════
+function exportIFC() {
+  if (!sceneObjects.length) { toast('No model to export'); return; }
+  let ifc = `ISO-10303-21;\nHEADER;\nFILE_DESCRIPTION(('AI CAD Helper IFC Export'),'2;1');\nFILE_NAME('ai-cad-helper.ifc','${new Date().toISOString()}',('AI CAD Helper'),(''),'AI CAD Helper v1.0','','');\nFILE_SCHEMA(('IFC4'));\nENDSEC;\nDATA;\n`;
+  ifc += `#1=IFCPROJECT('${generateGUID()}',#2,'AI CAD Helper Site Plan',$,$,$,$,(#3),#4);\n`;
+  ifc += `#2=IFCOWNERHISTORY(#5,#6,$,.ADDED.,$,$,$,0);\n`;
+  ifc += `#3=IFCGEOMETRICREPRESENTATIONCONTEXT($,'Model',3,1.0E-5,#7,$);\n`;
+  ifc += `#4=IFCUNITASSIGNMENT((#8,#9));\n`;
+  ifc += `#5=IFCPERSONANDORGANIZATION(#10,#11,$);\n`;
+  ifc += `#6=IFCAPPLICATION(#11,'1.0','AI CAD Helper','AICH');\n`;
+  ifc += `#7=IFCAXIS2PLACEMENT3D(#12,$,$);\n`;
+  ifc += `#8=IFCSIUNIT(*,.LENGTHUNIT.,$,.FOOT.);\n`;
+  ifc += `#9=IFCSIUNIT(*,.AREAUNIT.,$,.SQUARE_FOOT.);\n`;
+  ifc += `#10=IFCPERSON($,'Engineer',$,$,$,$,$,$);\n`;
+  ifc += `#11=IFCORGANIZATION($,'AI CAD Helper',$,$,$);\n`;
+  ifc += `#12=IFCCARTESIANPOINT((0.,0.,0.));\n`;
+  let nextId = 13;
+  sceneObjects.filter(o=>o.type==='rect'&&o.elType!=='setback').forEach((obj,i) => {
+    const guid = generateGUID();
+    const ifcClass = { building:'IFCBUILDINGELEMENT', road:'IFCTRANSPORTELEMENT', parking:'IFCSPACE', pond:'IFCGEOGRAPHICELEMENT', greenspace:'IFCGEOGRAPHICELEMENT' }[obj.elType] || 'IFCBUILDINGELEMENT';
+    ifc += `#${nextId++}=${ifcClass}('${guid}',#2,'${obj.label||obj.elType}',$,$,$,$,$,.NOTDEFINED.);\n`;
+  });
+  ifc += 'ENDSEC;\nEND-ISO-10303-21;';
+  download('ai-cad-helper.ifc', ifc, 'text/plain');
+  toast('IFC exported — open in Revit, ArchiCAD, or Civil 3D');
+}
+
+function exportOBJ() {
+  if (!sceneObjects.length) { toast('No model to export'); return; }
+  let obj = '# AI CAD Helper OBJ Export\n# Compatible with AutoCAD, Revit, SketchUp\n\n';
+  let vertOffset = 1;
+  sceneObjects.filter(o=>o.mesh?.geometry).forEach(el => {
+    obj += `g ${el.label||el.elType||'object'}\n`;
+    const pos = el.mesh.geometry.attributes.position;
+    for (let i=0;i<pos.count;i++) {
+      obj += `v ${(pos.getX(i)+el.mesh.position.x).toFixed(3)} ${(pos.getY(i)+el.mesh.position.y).toFixed(3)} ${(pos.getZ(i)+el.mesh.position.z).toFixed(3)}\n`;
+    }
+    const idx = el.mesh.geometry.index;
+    if (idx) {
+      for (let i=0;i<idx.count;i+=3) obj += `f ${idx.getX(i)+vertOffset} ${idx.getX(i+1)+vertOffset} ${idx.getX(i+2)+vertOffset}\n`;
+    }
+    vertOffset += pos.count;
+  });
+  download('ai-cad-helper.obj', obj, 'text/plain');
+  toast('OBJ exported — compatible with AutoCAD & SketchUp');
+}
+
+function exportDXF() {
+  let dxf = '0\nSECTION\n2\nHEADER\n0\nENDSEC\n0\nSECTION\n2\nENTITIES\n';
+  sceneObjects.filter(o=>o.type==='rect').forEach(el => {
+    dxf += `0\nLWPOLYLINE\n8\n${el.elType||'0'}\n90\n4\n70\n1\n`;
+    [[el.x,el.y],[el.x+el.w,el.y],[el.x+el.w,el.y+el.h],[el.x,el.y+el.h]].forEach(([x,y])=>dxf+=`10\n${x}\n20\n${-y}\n`);
+  });
+  dxf += '0\nENDSEC\n0\nEOF';
+  download('ai-cad-helper.dxf', dxf, 'text/plain');
+  toast('DXF exported — open in AutoCAD or Civil 3D');
+}
+
+function takeScreenshot() {
+  renderer.render(scene, camera);
+  const a = document.createElement('a');
+  a.href = canvas.toDataURL('image/png');
+  a.download = 'ai-cad-helper-3d.png';
+  a.click();
+  toast('Screenshot saved');
+}
+
+function download(filename, content, type) {
+  const blob = new Blob([content], { type });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename; a.click();
+}
+
+// ═══════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════
+function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''; }
+function generateGUID() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random()*16|0;
+    return (c==='x'?r:(r&0x3|0x8)).toString(16).toUpperCase();
+  });
+}
+
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+// ═══════════════════════════════════════════════════════
+// RENDER LOOP
+// ═══════════════════════════════════════════════════════
+function resize() {
+  const w = wrap.clientWidth, h = wrap.clientHeight;
+  renderer.setSize(w, h);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+window.addEventListener('resize', resize);
+resize();
+
+function animate() {
+  requestAnimationFrame(animate);
+  renderer.render(scene, camera);
+}
+animate();
+
+// Auto-load if elements in localStorage
+window.addEventListener('load', () => {
+  try {
+    const saved = localStorage.getItem('cad_elements');
+    if (saved) {
+      const elements = JSON.parse(saved);
+      if (elements?.length) { buildScene(elements); return; }
+    }
+  } catch(e){}
+});
+
+toast('Welcome to BIM Viewer — click "Generate 3D from 2D Layout" to start');
+</script>
+</body>
+</html>
